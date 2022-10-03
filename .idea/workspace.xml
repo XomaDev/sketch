@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="slime:jar" />
+    </artifacts-to-build>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e37e065b-b867-4bb3-87da-46a0c271c4e5" name="Changes" comment="restructure functions&#10;&#10;- fixed functions, containing multi line">
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/AST.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/Error.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/Token.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/ASTNode.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/expressions/AssignmentExpr.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/expressions/Expression.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/expressions/FuncCallExpr.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/expressions/OperateExpr.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/expressions/unary/Negate.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/expressions/unary/Unary.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/statements/Statement.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/statements/natives/Print.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/ExprList.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/Float.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/Identifier.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/Int.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/Number.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/StringLiteral.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ast/values/Value.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/artifacts/moonlight_jar.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/artifacts/slime_jar.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hello.slime" beforeDir="false" afterPath="$PROJECT_DIR$/hello.slime" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/how.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/moonlight.iml" beforeDir="false" afterPath="$PROJECT_DIR$/moonlight.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/saves/escape" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/Memory.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/Reusable.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/Slime.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/Slime.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/BracketParser.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/Processor.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/elements/Block.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/elements/Body.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/elements/Node.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/elements/Unary.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/elements/datatypes/Array.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/block/handlers/ArrayHandler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/elements/Target.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/executor/Executor.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/lex/Lex.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/lex/Lex.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/Element.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/ListEnum.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/Refactor.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/Type.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/Type.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/Operation.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/Operations.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/Tools.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/UnaryOperation.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/math/Add.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/math/Divide.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/math/Multiply.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/math/Power.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/math/Subtract.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/operators/Assign.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/operators/SymbolAccess.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/xyz/moonlight/slime/process/operations/operators/SystemCall.java" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2Ec0BjE2au0cgca0g3p1CrX1g7s" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Downloaded.Files.Path.Enabled&quot;: &quot;false&quot;,
+    &quot;Project.color&quot;: &quot;2c4546&quot;,
+    &quot;Repository.Attach.Annotations&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.JavaDocs&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Sources&quot;: &quot;false&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;extract.method.default.visibility&quot;: &quot;private&quot;,
+    &quot;jdk.selected.JAVA_MODULE&quot;: &quot;corretto-17&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Prashanth/Documents/slime/asset&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;Settings.Markdown&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Prashanth\Documents\slime\asset" />
+      <recent name="C:\Users\Prashanth\Documents\slime" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.Main">
+    <configuration name="FuncTest" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="FuncTest" />
+      <module name="sketch" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Lexer" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="xyz.moonlight.sketch.lex.Lexer" />
+      <module name="sketch" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="xyz.moonlight.sketch.lex.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Main (1)" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Main" />
+      <module name="bytecode" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Main" />
+      <module name="sketch" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.Main" />
+        <item itemvalue="Application.FuncTest" />
+        <item itemvalue="Application.Lexer" />
+        <item itemvalue="Application.Main (1)" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e37e065b-b867-4bb3-87da-46a0c271c4e5" name="Changes" comment="" />
+      <created>1662879431538</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1662879431538</updated>
+      <workItem from="1664039126295" duration="1571000" />
+      <workItem from="1664041127984" duration="1657000" />
+      <workItem from="1664044894391" duration="1189000" />
+      <workItem from="1664046106096" duration="5221000" />
+      <workItem from="1664113648206" duration="12000" />
+      <workItem from="1664121646684" duration="8445000" />
+      <workItem from="1664140284317" duration="601000" />
+      <workItem from="1664167388331" duration="2300000" />
+      <workItem from="1664186640492" duration="4957000" />
+      <workItem from="1664194116463" duration="669000" />
+      <workItem from="1664195416130" duration="670000" />
+      <workItem from="1664205804511" duration="1006000" />
+      <workItem from="1664207974934" duration="2205000" />
+      <workItem from="1664255152545" duration="838000" />
+      <workItem from="1664269185681" duration="33362000" />
+      <workItem from="1664307400553" duration="11000" />
+      <workItem from="1664343746903" duration="974000" />
+      <workItem from="1664347566227" duration="15406000" />
+      <workItem from="1664372871353" duration="718000" />
+      <workItem from="1664377209257" duration="8000" />
+      <workItem from="1664429344260" duration="719000" />
+      <workItem from="1664430884743" duration="12240000" />
+      <workItem from="1664444290472" duration="2000" />
+      <workItem from="1664449538912" duration="11792000" />
+      <workItem from="1664516305999" duration="1637000" />
+      <workItem from="1664550904075" duration="7552000" />
+      <workItem from="1664616387049" duration="116000" />
+      <workItem from="1664623523971" duration="1330000" />
+      <workItem from="1664626327287" duration="17567000" />
+      <workItem from="1664724384885" duration="1542000" />
+      <workItem from="1664727412306" duration="8181000" />
+      <workItem from="1664773989757" duration="7553000" />
+      <workItem from="1664783684026" duration="164000" />
+    </task>
+    <task id="LOCAL-00001" summary="Implement Lex">
+      <created>1662880630199</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1662880630199</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Implement refactor and Improve Lex&#10;&#10;- to support for float values&#10;- and texts ('hello')&#10;- fixed lex bugs">
+      <created>1662882706874</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1662882706874</updated>
+    </task>
+    <task id="LOCAL-00003" summary="String escapes, parsing&#10;&#10;- Element.java, holds an element with the type &lt;Type?element&gt;&#10;- Lex.java added string escaping&#10;- ListEnum - &gt; verify elements&#10;- Refactor - &gt; Handles various things, such as string literals, floats, and segregation.&#10;- Type enum to know the type of objects, also provides few functions">
+      <created>1662891553089</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1662891553089</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Unary operators">
+      <created>1662898001130</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1662898001130</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Remove comments">
+      <created>1662898037434</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1662898037434</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Improved parsing technique&#10;&#10;- Added @Target">
+      <created>1663088054194</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1663088054194</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Added [] and $access&#10;&#10;- Adds features for brackets, fixes bugs&#10;- Add BracketParser as separate class&#10;- Fix bug in Element.value() method&#10;- Moved few classes to another package">
+      <created>1663102605913</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1663102605913</updated>
+    </task>
+    <task id="LOCAL-00008" summary="A series of upgrades&#10;&#10;- Finished parser + Executor&#10;- Finished with unary executors and operation executors&#10;- Fixed Lexer Bugs&#10;- Finished method call operations feature">
+      <created>1663526185262</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1663526185262</updated>
+    </task>
+    <task id="LOCAL-00009" summary="strings, functions, var-get&#10;&#10;- string values not supported&#10;- support for declaring functions and invoking them&#10;- support for arrays (only create arrays, print)&#10;- var-get, variables need to be got via `$varName`">
+      <created>1663745788332</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1663745788332</updated>
+    </task>
+    <task id="LOCAL-00010" summary="restructure functions&#10;&#10;- fixed functions, containing multi line">
+      <created>1663862187436</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1663862187436</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$" />
+    </ignored-roots>
+    <MESSAGE value="Implement Lex" />
+    <MESSAGE value="Implement refactor and Improve Lex&#10;&#10;- to support for float values&#10;- and texts ('hello')&#10;- fixed lex bugs" />
+    <MESSAGE value="String escapes, parsing&#10;&#10;- Element.java, holds an element with the type &lt;Type?element&gt;&#10;- Lex.java added string escaping&#10;- ListEnum - &gt; verify elements&#10;- Refactor - &gt; Handles various things, such as string literals, floats, and segregation.&#10;- Type enum to know the type of objects, also provides few functions" />
+    <MESSAGE value="Unary operators" />
+    <MESSAGE value="Remove comments" />
+    <MESSAGE value="Improved parsing technique&#10;&#10;- Added @Target" />
+    <MESSAGE value="Added [] and $access&#10;&#10;- Adds features for brackets, fixes bugs&#10;- Add BracketParser as separate class&#10;- Fix bug in Element.value() method&#10;- Moved few classes to another package" />
+    <MESSAGE value="A series of upgrades&#10;&#10;- Finished parser + Executor&#10;- Finished with unary executors and operation executors&#10;- Fixed Lexer Bugs&#10;- Finished method call operations feature" />
+    <MESSAGE value="strings, functions, var-get&#10;&#10;- string values not supported&#10;- support for declaring functions and invoking them&#10;- support for arrays (only create arrays, print)&#10;- var-get, variables need to be got via `$varName`" />
+    <MESSAGE value="restructure functions&#10;&#10;- fixed functions, containing multi line" />
+    <option name="LAST_COMMIT_MESSAGE" value="restructure functions&#10;&#10;- fixed functions, containing multi line" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/moonlight$Main.ic" NAME="Main Coverage Results" MODIFIED="1663959957136" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+  </component>
+</project>

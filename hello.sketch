@@ -1,0 +1,13 @@
+val date = 07;
+val goodboy = true;
+
+fun today() {
+  if (  goodboy ) {  print("apologize!");  }
+  else {    delay();    };
+};
+
+fun delay() {
+  date++;
+  today();
+};
+today();
