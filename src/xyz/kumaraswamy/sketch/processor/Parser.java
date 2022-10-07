@@ -1,58 +1,79 @@
 package xyz.kumaraswamy.sketch.processor;
 
-import xyz.kumaraswamy.sketch.Slime;
+import xyz.kumaraswamy.sketch.Sketch;
 import xyz.kumaraswamy.sketch.lex.TokenType;
 import xyz.kumaraswamy.sketch.lex.Token;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static xyz.kumaraswamy.sketch.lex.TokenType.*;
+
 public class Parser {
 
-    public static class ParseException extends RuntimeException {}
+    public static class ParseException extends RuntimeException {
+    }
 
-    private static final TokenType[]
-            BINARY_OPERATORS = {    TokenType.EQUAL, TokenType.PLUS, TokenType.MINUS,
-            TokenType.SLASH, TokenType.STAR, TokenType.PERCENTAGE    };
+    private static final TokenType[] BINARY_OPERATORS = {
+            EQUAL, PLUS, MINUS,
+            SLASH, STAR, PERCENTAGE
+    };
 
-    private static final TokenType[]
-            LOGICAL_OPERATORS = {    TokenType.BANG_EQUAL, TokenType.NOT_EQUAL, TokenType.ABOVE, TokenType.BELOW, TokenType.ABOVE_EQUAL, TokenType.BELOW_EQUAL,
-                                     TokenType.LOGICAL_OR, TokenType.LOGICAL_AND, TokenType.BITWISE_OR, TokenType.BITWISE_AND
-                                }; // ==, >, <, >=, <=, ||, &&, |, &
-
-    private static final TokenType[]
-            INLINE_OPERATORS = {    TokenType.THEN    };
+    private static final TokenType[] LOGICAL_OPERATORS = {
+            EQUAL_EQUAL, NOT_EQUAL,
+            ABOVE, BELOW,
+            ABOVE_EQUAL, BELOW_EQUAL,
+            LOGICAL_OR, LOGICAL_AND,
+            BITWISE_OR, BITWISE_AND
+    };
+    // ==, >, <, >=, <=, ||, &&, |, &
 
     private final List<Token> tokens;
+
     private int current = 0;
+
+    private int posCache = -1;
+    private Token cache = null;
+    private boolean skipExpr = false;
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
 
-    public List<Expression> parse() {
+    public List<Expression> parseTokens() {
         if (peek().type == TokenType.EOF) {
             return new ArrayList<>();
         }
-        return parse(TokenType.EOF);
+        return parse();
     }
 
-    private List<Expression> parse(TokenType endAt) {
-        List<Expression> expressions = new ArrayList<>();
+    private List<Expression> parse() {
+        final ArrayList<Expression> expressions = new ArrayList<>();
 
-        Token token = next();
-        expressions.add(primary(token));
+        Expression expr = primary(next());
+        if (skipExpr) {
+            skipExpr = false;
+            return expressions;
+        }
+        expressions.add(expr);
 
-        while (peek().matches(  TokenType.SEMICOLON   )) {
+        while (peek().matches(TokenType.SEMICOLON)) {
             next(); // eat ';'
-            if (peek().matches(TokenType.EOF, endAt)) {
+            while (peek().matches(SEMICOLON)) {
+                next(); // eat extra ';'
+            }
+            if (peek().matches(TokenType.EOF, RIGHT_BRACE)) {
                 return expressions;
             }
-            Token next = next();
-            expressions.add(primary(next));
+            expr = primary(next());
+            if (skipExpr) {
+                skipExpr = false;
+                continue;
+            }
+            expressions.add(expr);
         }
-        if (!peek().matches(TokenType.EOF, endAt)) {
-            Slime.error(peek(), "Unexpected token");
+        if (!peek().matches(TokenType.EOF, RIGHT_BRACE)) {
+            Sketch.error(peek(), "Unexpected token");
             throw new ParseException();
         }
         return expressions;
@@ -64,25 +85,51 @@ public class Parser {
             case IF -> ifIdentifier();
             case FOR -> forIdentifier(token);
             case WHILE -> whileIdentifier();
+            case EACH -> eachIdentifier();
 
-            case BREAK -> breakIdentifier();
-            case CONTINUE -> continueIdentifier();
+            case BREAK -> Expression.Break.BREAK;
+            case CONTINUE -> Expression.Continue.CONTINUE;
             case RETURN -> new Expression.Return(expr());
             case FORWARD -> forwardIdentifier();
 
             case LEV, VAL -> datatype(token);
+            case WITH -> withIdentifier();
             default -> value(token);
         };
     }
 
+    private Expression withIdentifier() {
+        // with sketch.random : random
+        // with [from [dot] function] : [as identifier]
+        Token from = consume(IDENTIFIER,
+                "Expected [from] identifier");
+        consume(DOT, "Expected '.'");
+        Token function = consume(IDENTIFIER,
+                "Expected [function] identifier");
+        Token as = peek().type == SEMICOLON
+                ? null
+                : consume(IDENTIFIER,
+                "Expected [as] identifier");
+        return new Expression.With(from, function, as);
+    }
+
+    private Expression eachIdentifier() {
+        Token valName = consume(IDENTIFIER,
+                "Expected val identifier");
+        consume(TokenType.LEFT_RIGHT, "Expected '->'");
+        Token elementName = consume(IDENTIFIER,
+                "Expected val element identifier");
+        List<Expression> block = blockBody();
+        return new Expression.Each(valName, elementName, block);
+    }
+
     private Expression forIdentifier(Token token) {
-        Token valName = consume(TokenType.IDENTIFIER,
+        Token valName = consume(IDENTIFIER,
                 "Expected variable identifier");
         consume(TokenType.LEFT_PAREN, "Expected '('");
         Expression range = expr();
-        System.out.println(range);
         if (!(range instanceof Expression.Range)) {
-            Slime.error(token, "Expected a valid range -> or <-");
+            Sketch.error(token, "Expected a valid range -> or <-");
             // never reached
             return null;
         }
@@ -93,45 +140,56 @@ public class Parser {
 
     private Expression value(Token token) {
         switch (token.type) {
-            case NULL: case TRUE: case FALSE:
-            case NUMBER: case STRING:
+            case NULL:
+            case TRUE:
+            case FALSE:
+            case NUMBER:
+            case STRING:
                 return new Expression.Literal<>(token.literal);
             case IDENTIFIER:
                 Token peek = peek();
-                if (peek.type == TokenType.LEFT_PAREN) {
-                    // function call
-                    // exprId -> functionName
-                    return new Expression.FunCall(token, arguments());
-                } else if (peek.type == TokenType.EQUAL) {
-                    // because assignment can be a normal statement
-                    // like z = z = 1;
-                    return expression(literal(token));
-                } else if (peek.matches(  TokenType.INCREMENT, TokenType.DECREMENT  )) {
-                    next(); // eat '++' or '--'
-                    return new Expression.BinaryUnary(false, token, peek);
-                } else if (peek.matches(  TokenType.DOT  )) {
-                    next(); // eat '.'
-                    return getPropertyIdentifier(token);
+                switch (peek.type) {
+                    case LEFT_PAREN:
+                        // function call
+                        // exprId -> functionName
+                        return new Expression.FunCall(token, arguments());
+                    case EQUAL:
+                    case LEFT_SQUARE:
+                        // because assignment/array_access can be a normal statement
+                        // like z = z = 1;
+                        // like array[z] = x;
+                        return expression(literal(token));
+                    case INCREMENT:
+                    case DECREMENT:
+                        next(); // eat '++' or '--'
+                        return new Expression.BinaryUnary(false, token, peek);
+                    case DOT:
+                        next(); // eat '.'
+                        return getPropertyIdentifier(token);
+                    default:
+                        return literal(token);
                 }
-                return literal(token);
             case INCREMENT:
             case DECREMENT:
                 // parse from the left
-                Token id = consume(TokenType.IDENTIFIER,
+                Token id = consume(IDENTIFIER,
                         "Expected identifier after " +
                                 token.type.name() + " operator");
                 return new Expression.BinaryUnary(true, id, token);
             case LEFT_PAREN:
                 Expression expression = expr();
                 consume(TokenType.RIGHT_PAREN, "Expected ')'");
-                return new Expression.Grouping(expression);
+                return expression;
+            case LEFT_SQUARE:
+                List<Expression> array = array();
+                consume(TokenType.RIGHT_SQUARE, "Expected ']'");
+                return new Expression.Array(array);
             case MINUS:
             case EXCLAMATION:
                 // negate operator, exclamation operator
                 // negate var -> -(*negate*)
                 // exclamation var -> !(*bool*)
-                Expression expr = value(next());
-                return new Expression.Unary(token, expr);
+                return new Expression.Unary(token, expr());
             case THIS:
                 consume(TokenType.DOT, "Invalid value access after [.]");
                 return getPropertyIdentifier(token);
@@ -139,18 +197,31 @@ public class Parser {
         return null;
     }
 
+    private List<Expression> array() {
+        List<Expression> args = new ArrayList<>();
+        if (peek().type == TokenType.RIGHT_SQUARE) {
+            next(); // eat ')'
+            return args;
+        }
+        args.add(expr());
+
+        while (peek().type == TokenType.COMMA) {
+            next(); // eat ','
+            args.add(expr());
+        }
+        return args;
+    }
+
     private Expression getPropertyIdentifier(Token token) {
-        Token id = consume(TokenType.IDENTIFIER,
+        Token id = consume(IDENTIFIER,
                 "Expected identifier after [.] property access");
         Expression expr = new Expression.PropertyIdentifier(token, id);
-        if (peek().type == TokenType.EQUAL) {
-            return expression(expr);
-        }
+        if (peek().type == TokenType.EQUAL) return expression(expr);
         return expr;
     }
 
     private Expression datatype(Token type) {
-        Token valId = consume(TokenType.IDENTIFIER,
+        Token valId = consume(IDENTIFIER,
                 "Variable identifier expected");
         Expression expr;
         if (peek().type == TokenType.SEMICOLON) {
@@ -169,16 +240,6 @@ public class Parser {
                 false, new Expression.Val.ValId(valId), expr);
     }
 
-    private Expression breakIdentifier() {
-        Token peek = peek();
-        if (!peek.matches(  TokenType.SEMICOLON  )) {
-            Slime.error(peek, "Unexpected token after 'break'");
-            return null;
-        }
-        // break constant to reuse
-        return Expression.Break.BREAK;
-    }
-
     private Expression forwardIdentifier() {
         Token peek = peek();
         Expression val;
@@ -190,33 +251,55 @@ public class Parser {
         return new Expression.Forward(val);
     }
 
-    private Expression continueIdentifier() {
-        Token peek = peek();
-        if (peek.type != TokenType.SEMICOLON) {
-            Slime.error(peek, "Unexpected token after 'continue'");
-            return null;
-        }
-        // break constant to reuse
-        return Expression.Continue.CONTINUE;
-    }
-
     private Expression ifIdentifier() {
-        Expression expr = consumeExpression();
+        Expression condition = consumeExpression();
         List<Expression> then = blockBody();
 
-        if (peek().matches(TokenType.ELSE)) {
-            next(); // eat 'else'
-            List<Expression> elseExpr = blockBody();
-            return new Expression.If(expr, then, elseExpr);
+        if (peek(1).type == ELSE) {
+            next(); // eat ';' added by parser
+            next(); // eat else
+            return new Expression.If(condition, then, blockBody());
         }
-        return new Expression.If(expr, then);
+
+        if (!then.isEmpty() && then.get(0)
+                instanceof Expression.Interruption interrupt) {
+            // label after ';'
+            if (!peek(1).matches(  RETURN, FORWARD, BREAK, CONTINUE  )) {
+                return new Expression.If(condition, then);
+            }
+            next(); // eat current ';' after if expr
+            Token type = next(); // eat interruption label like 'return'
+            // expression of interruption
+            // ex;
+            // return 2 + 2;
+            // return <expression>
+            Expression expression = interrupt.expr();
+
+            if (expression != null) {
+                Expression.Ternary ternary =
+                        new Expression.Ternary(
+                                condition, expression, expr());
+                switch (type.type) {
+                    case RETURN:
+                        return new Expression.Return(ternary);
+                    case FORWARD:
+                        return new Expression.Forward(ternary);
+                }
+            }
+
+        }
+
+        // eat semicolons after } if there
+        // are any
+        return new Expression.If(condition, then);
     }
 
     private Expression whileIdentifier() {
-        return new Expression.While(
-                consumeExpression(), blockBody());
+        Expression cond = consumeExpression();
+        List<Expression> body = blockBody();
+        Expression wh = new Expression.While(cond, body);
+        return wh;
     }
-
 
     private Expression consumeExpression() {
         consume(TokenType.LEFT_PAREN, "Expected '(");
@@ -226,7 +309,7 @@ public class Parser {
     }
 
     private Expression literal(Token token) {
-        return token.type == TokenType.IDENTIFIER
+        return token.type == IDENTIFIER
                 ? new Expression.Identifier(token)
                 : new Expression.Literal.Literal<>(token.literal);
     }
@@ -240,7 +323,7 @@ public class Parser {
         }
         args.add(expr());
 
-        while ( peek().type == TokenType.COMMA ) {
+        while (peek().type == TokenType.COMMA) {
             next(); // eat ','
             args.add(expr());
         }
@@ -250,7 +333,7 @@ public class Parser {
 
     private Expression fun() {
         // fun <funId,(,args), {body}
-        Token funId = consume(TokenType.IDENTIFIER,
+        Token funId = consume(IDENTIFIER,
                 "Expect identifier after 'val' keyword");
         List<Token> args = funArgIdentifiers();
         List<Expression> fun = blockBody();
@@ -263,11 +346,18 @@ public class Parser {
         if (peek().type == TokenType.RIGHT_BRACE) {
             // empty body
             next(); // eat '}';
+            addSemicolon();
             return new ArrayList<>();
         }
-        List<Expression> expressions = parse(TokenType.RIGHT_BRACE);
-        consume(TokenType.RIGHT_BRACE, "Expected '}'");
+        List<Expression> expressions = parse();
+        consume(RIGHT_BRACE, "Expected '}'");
+        addSemicolon();
         return expressions;
+    }
+
+    private void addSemicolon() {
+        tokens.add(current, new Token(SEMICOLON,
+                ";", ";", -1));
     }
 
     private List<Token> funArgIdentifiers() {
@@ -280,11 +370,11 @@ public class Parser {
 
         String msg = "Expected arg identifier";
         // eat identifier
-        ids.add(consume(TokenType.IDENTIFIER, msg));
+        ids.add(consume(IDENTIFIER, msg));
 
-        while ( peek().type == TokenType.COMMA ) {
+        while (peek().type == TokenType.COMMA) {
             next(); // eat ','
-            ids.add(consume(TokenType.IDENTIFIER, msg));
+            ids.add(consume(IDENTIFIER, msg));
         }
         consume(TokenType.RIGHT_PAREN, "Expected ')'");
         return ids;
@@ -298,51 +388,75 @@ public class Parser {
 
     private Expression expression(Expression left) {
         Token peek = peek();
-        if (peek.matches(  TokenType.LEFT_RIGHT, TokenType.RIGHT_LEFT  )) {
-            next(); // eat '->' or '<-'
-            // right side expression left -> right
-            Expression right = expr();
-            return new Expression.Range(peek, left, right);
-        } else if (peek.matches(  INLINE_OPERATORS  )) {
-            next(); // consume 'then'
-            Expression then = expr();
-            consume(TokenType.OR, "Expected OR expression for inline expression");
-            Expression or = expr();
-            return new Expression.Ternary(left, then, or);
-        } else if (peek.matches(BINARY_OPERATORS)) {
-            // consume current
-            Token operator = next();
-            if (operator.type == TokenType.EQUAL) {
-                // the operator, set
-                // val z;
-                // z = 7;
-                if (!(left instanceof Expression.Identifier
-                        || left instanceof Expression.PropertyIdentifier)) {
-                    Slime.error(operator,
-                            "Requires val id to be an identifier");
-                    return null; // never reached
-                }
-                return new Expression.Val(TokenType.VAL, true, new Expression.Val.ValId(left), expr());
-            }
-            Expression right = parseRightExpression();
-            return expression(new Expression.Binary(
-                    left, operator, right));
-        } else if (peek.matches(LOGICAL_OPERATORS)) {
-            Token logicalOp = next();
 
-            Expression right;
-            if (peek.matches(  TokenType.LOGICAL_AND, TokenType.LOGICAL_OR  )) {
-                right = expr();
-            } else {
-                right = value(next());
-                while (peek().matches(BINARY_OPERATORS)) {
-                    right = parseExpressionBind(right);
+        switch (peek.type) {
+            case LEFT_RIGHT:
+            case RIGHT_LEFT:
+                next(); // eat '->' or '<-'
+                // right side expression left -> right
+                return new Expression.Range(peek, left, expr());
+            case LEFT_SQUARE:
+                next(); // eat '['
+                Expression.ArrayAccess access =
+                        new Expression.ArrayAccess(left, expr());
+                consume(RIGHT_SQUARE, "Expected ']'");
+                return expression(access);
+            case THEN:
+                next(); // consume 'then'
+                Expression then = expr();
+                consume(TokenType.OR, "Expected OR expression for inline expression");
+                Expression or = expr();
+                return new Expression.Ternary(left, then, or);
+            case EQUAL:
+                return assignmentExpression(left);
+            default:
+                if (peek.matches(BINARY_OPERATORS)) {
+                    return binaryOperator(left);
+                } else if (peek.matches(LOGICAL_OPERATORS)) {
+                    return logicalOperator(left, peek);
                 }
-            }
-            return expression(
-                    new Expression.Logical(left, logicalOp, right));
+                return left;
         }
-        return left;
+    }
+
+    private Expression assignmentExpression(Expression left) {
+        Token operator = next(); // eat '='
+        // the operator, set
+        // val z;
+        // z = 7;
+        if (!(left instanceof Expression.Identifier
+                || left instanceof Expression.PropertyIdentifier
+                || left instanceof Expression.ArrayAccess)) {
+            Sketch.error(operator,
+                    "Invalid assignment operation");
+            return null;
+        }
+        return new Expression.Val(TokenType.VAL,
+                true, new Expression.Val.ValId(left), expr());
+    }
+
+    private Expression logicalOperator(Expression left, Token peek) {
+        Token logicalOp = next();
+
+        Expression right;
+        if (peek.matches(TokenType.LOGICAL_AND, TokenType.LOGICAL_OR)) {
+            right = expr();
+        } else {
+            right = value(next());
+            while (peek().matches(BINARY_OPERATORS)) {
+                right = parseExpressionBind(right);
+            }
+        }
+        return expression(
+                new Expression.Logical(left, logicalOp, right));
+    }
+
+    private Expression binaryOperator(Expression left) {
+        Token operator = next();
+        Expression right = rightExpression();
+        return expression(
+                new Expression.Binary(
+                        left, operator, right));
     }
 
     private Expression parseExpressionBind(Expression left) {
@@ -350,13 +464,13 @@ public class Parser {
             return left;
         }
         Token operator = next();
-        Expression right = parseRightExpression();
+        Expression right = rightExpression();
         return new Expression.Binary(left, operator, right);
     }
 
-    private Expression parseRightExpression() {
+    private Expression rightExpression() {
         Expression right = value(next());
-        while (peek().matches(TokenType.SLASH, TokenType.STAR, TokenType.PERCENTAGE)) {
+        while (peek().matches(SLASH, STAR, PERCENTAGE)) {
             // bin(left, right)
             // expr(bin) - > continue
             right = parseExpression(right);
@@ -366,7 +480,7 @@ public class Parser {
 
     private Expression parseExpression(Expression left) {
         // consume current
-        if (!peek().matches( Parser.BINARY_OPERATORS  )) {
+        if (!peek().matches(Parser.BINARY_OPERATORS)) {
             return left;
         }
         Token operator = next();
@@ -377,7 +491,7 @@ public class Parser {
     private Token consume(TokenType type, String message) {
         Token token = next();
         if (token.type != type) {
-            Slime.error(token, message);
+            Sketch.error(token, message);
             throw new ParseException();
         }
         return token;
@@ -388,9 +502,16 @@ public class Parser {
     }
 
     public Token peek() {
-        if (current == tokens.size()) {
+        if (current == posCache)
+            return cache;
+        if (current == tokens.size())
             return new Token(TokenType.EOF, "", null, 0);
-        }
-        return tokens.get(current);
+        Token token = tokens.get(current);
+        posCache = current;
+        return cache = token;
+    }
+
+    public Token peek(int n) {
+        return tokens.get(current + n);
     }
 }

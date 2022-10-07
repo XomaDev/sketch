@@ -9,12 +9,14 @@ import java.util.List;
 public abstract class Expression implements Visit {
 
     interface Visitor<R> {
+        R visitWithExpr(With expr);
         R visitBinaryExpr(Binary expr);
         R visitBinaryUnaryExpr(BinaryUnary expr);
         R visitUnaryExpr(Unary expr);
         R visitLogicalExpr(Logical expr);
-        R visitGroupingExpr(Grouping expr);
+        R visitArrayExpr(Array expr);
         R visitLiteralExpr(Literal<?> expr);
+        R visitArrayAccessExpr(ArrayAccess expr);
         R visitSharedExpr(Shared expr);
         R visitValEpr(Val expr);
         R visitTernary(Ternary expr);
@@ -22,6 +24,7 @@ public abstract class Expression implements Visit {
         R visitRangeExpr(Range expr);
         R visitForExpr(For expr);
         R visitWhileExpr(While expr);
+        R visitEachExpr(Each expr);
         R visitFunExpr(Fun expr);
         R visitReturnExpr(Return expr);
         R visitBreakExpr(Break expr);
@@ -30,6 +33,31 @@ public abstract class Expression implements Visit {
         R visitFunCallExpr(FunCall expr);
         R visitIdentifierExpr(Identifier expr);
         R visitPropertyAccessExpr(PropertyIdentifier expr);
+    }
+
+    public static class With extends Expression {
+
+        public With(Token from, Token func, Token as) {
+            this.from = from;
+            this.func = func;
+            this.as = as;
+        }
+
+        // accessed by Import class
+        // to do operations
+        public final Token from;
+        public final Token func;
+        public final Token as;
+
+        @Override
+        public String visit() {
+            return "with(" + from.lexeme + "." + func.lexeme + " as " + (as == null ? "null" : as.lexeme) + ")";
+        }
+
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return visitor.visitWithExpr(this);
+        }
     }
 
     public static class Binary extends Expression {
@@ -106,24 +134,24 @@ public abstract class Expression implements Visit {
         }
     }
 
-    public static class Grouping extends Expression {
-        public Grouping(Expression expression) {
-            this.expression = expression;
+    public static class Array extends Expression {
+
+        public Array(List<Expression> exprs) {
+            this.exprs = exprs;
         }
 
-        final Expression expression;
+        final List<Expression> exprs;
 
         @Override
         public String visit() {
-            return expression.visit();
+            return String.valueOf(exprs);
         }
 
         @Override
         public <R> R accept(Visitor<R> visitor) {
-            return visitor.visitGroupingExpr(this);
+            return visitor.visitArrayExpr(this);
         }
     }
-
 
     public static class Literal<T> extends Expression {
         public Literal(T value) {
@@ -159,6 +187,26 @@ public abstract class Expression implements Visit {
         @Override
         public <R> R accept(Visitor<R> visitor) {
             return visitor.visitIdentifierExpr(this);
+        }
+    }
+
+    public static class ArrayAccess extends Expression {
+        public ArrayAccess(Expression array, Expression access) {
+            this.array = array;
+            this.access = access;
+        }
+
+        final Expression array;
+        final Expression access;
+
+        @Override
+        public String visit() {
+            return array + "[" + access + "]";
+        }
+
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return visitor.visitArrayAccessExpr(this);
         }
     }
 
@@ -224,7 +272,7 @@ public abstract class Expression implements Visit {
 
         public static class ValId {
 
-            private PropertyIdentifier property;
+            private Expression property;
             private Token token;
 
             public ValId(Token token) {
@@ -234,8 +282,10 @@ public abstract class Expression implements Visit {
             public ValId(Expression valId) {
                 if (valId instanceof Identifier id) {
                     this.token = id.token;
-                } else if (valId instanceof PropertyIdentifier) {
-                    this.property = (PropertyIdentifier) valId;
+                } else if (valId != null) {
+                    this.property = valId;
+                } else {
+                    throw new IllegalArgumentException("You sure..?");
                 }
             }
 
@@ -388,12 +438,36 @@ public abstract class Expression implements Visit {
 
         @Override
         public String visit() {
-            return "(while " + expr.visit() + " do " + body + ")";
+            System.out.println(expr instanceof While);
+            return "(while " + expr + " do " + body + ")";
         }
 
         @Override
         public <R> R accept(Visitor<R> visitor) {
             return visitor.visitWhileExpr(this);
+        }
+    }
+
+    public static class Each extends Expression {
+        public Each(Token targetName, Token elementName, List<Expression> body) {
+            this.targetName = targetName;
+            this.elementName = elementName;
+            this.body = body;
+        }
+
+        final Token targetName;
+        final Token elementName;
+        final List<Expression> body;
+
+        @Override
+        public String visit() {
+            return "each(" + targetName.lexeme + ", " +
+                    elementName.lexeme + " " + body + ")";
+        }
+
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return visitor.visitEachExpr(this);
         }
     }
 
@@ -420,12 +494,30 @@ public abstract class Expression implements Visit {
         }
     }
 
-    public static class Return extends Expression {
+    public static abstract class Interruption extends Expression {
+
+        abstract Expression expr();
+
+        @Override
+        public String visit() {
+            return null;
+        }
+
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return null;
+        }
+    }
+
+    public static class Return extends Interruption {
         public Return(Expression expression) {
             this.expression = expression;
         }
 
-        final Expression expression;
+        Expression expression;
+
+        @Override
+        Expression expr() {   return expression;   }
 
         @Override
         public String visit() {
@@ -438,11 +530,13 @@ public abstract class Expression implements Visit {
         }
     }
 
-    public static class Break extends Expression {
+    public static class Break extends Interruption {
 
         public static final Break BREAK = new Break();
 
         private Break() {}
+
+        Expression expr() {   return null;   }
 
         @Override
         public String visit() {
@@ -455,11 +549,13 @@ public abstract class Expression implements Visit {
         }
     }
 
-    public static class Continue extends Expression {
+    public static class Continue extends Interruption {
 
         public static final Continue CONTINUE = new Continue();
 
         private Continue() {}
+
+        Expression expr() {   return null;   }
 
         @Override
         public String visit() {
@@ -472,13 +568,15 @@ public abstract class Expression implements Visit {
         }
     }
 
-    public static class Forward extends Expression {
+    public static class Forward extends Interruption {
 
         public Forward(Expression expression) {
             this.expression = expression;
         }
 
         Expression expression;
+
+        Expression expr() {   return null;   }
 
         @Override
         public String visit() {

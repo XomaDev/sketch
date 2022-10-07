@@ -1,20 +1,30 @@
 package xyz.kumaraswamy.sketch.memory;
 
-import lombok.Getter;
-import xyz.kumaraswamy.sketch.processor.Expression;
-
 import java.util.HashMap;
 
-public class LowerMemory extends GlobalMemory {
+public class Memory {
 
     private final String name;
     // sMemory - > super memory
-    @Getter
-    private final GlobalMemory sMemory;
+    private final Memory sMemory;
 
-    public LowerMemory(String name, GlobalMemory sMemory) {
+    public Memory(String name, Memory sMemory) {
         this.name = name;
         this.sMemory = sMemory;
+    }
+
+    public Memory upwards() {
+        values.clear();
+        // reuse memory objects
+        // for lower memory system
+        sMemory.next = this;
+        return sMemory;
+    }
+
+    public Memory next;
+
+    public boolean lower() {
+        return sMemory != null;
     }
 
     private final HashMap<String, Object> values = new HashMap<>();
@@ -26,12 +36,12 @@ public class LowerMemory extends GlobalMemory {
         values.put(name, value);
     }
 
-    public void deleteVal(String name) {
-        values.remove(name);
+    public void define(String name, Object value) {
+        values.put(name, value);
     }
 
     public void push(String name, Object value) {
-        if (!values.containsKey(name)) {
+        if (sMemory != null && !values.containsKey(name)) {
             sMemory.push(name, value);
         } else {
             values.put(name, value);
@@ -39,23 +49,23 @@ public class LowerMemory extends GlobalMemory {
     }
 
     public Object getVal(String name) {
-        if (!values.containsKey(name)) {
+        if (sMemory != null && !values.containsKey(name)) {
             return sMemory.getVal(name);
         }
         return values.get(name);
     }
 
-    private final HashMap<String, Expression.Fun> functions = new HashMap<>();
+    private final HashMap<String, Object> functions = new HashMap<>();
 
-    public void defineFun(String name, Expression.Fun fun) {
+    public void defineFun(String name, Object fun) {
         if (values.containsKey(name)) {
             throw new IllegalArgumentException("[" + this.name + "]Function name already defined \"" + name + "\"");
         }
         functions.put(name, fun);
     }
 
-    public Expression.Fun getFun(String name) {
-        if (!functions.containsKey(name)) {
+    public Object getFun(String name) {
+        if (sMemory != null && !functions.containsKey(name)) {
             return sMemory.getFun(name);
         }
         return functions.get(name);

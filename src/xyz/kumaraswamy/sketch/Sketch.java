@@ -3,27 +3,25 @@ package xyz.kumaraswamy.sketch;
 import xyz.kumaraswamy.sketch.lex.TokenType;
 import xyz.kumaraswamy.sketch.lex.Lexer;
 import xyz.kumaraswamy.sketch.lex.Token;
-import xyz.kumaraswamy.sketch.memory.GlobalMemory;
+import xyz.kumaraswamy.sketch.memory.Memory;
 import xyz.kumaraswamy.sketch.processor.Expression;
 import xyz.kumaraswamy.sketch.processor.Parser;
 import xyz.kumaraswamy.sketch.processor.Evaluator;
 
-import java.util.StringJoiner;
-
-public class Slime {
+public class Sketch {
 
     private final Evaluator executor;
 
-    public Slime() {
-        executor = new Evaluator(new GlobalMemory());
+    public Sketch() {
+        executor = new Evaluator(new Memory("", null));
     }
 
     public void execute(String source) {
         Lexer lexer = new Lexer(source);
 
         Parser parser = new Parser(lexer.scanTokens());
-        for (Expression expression : parser.parse()) {
-             // System.out.println(expression.visit());
+        for (Expression expression : parser.parseTokens()) {
+              // System.out.println(expression.visit());
             // uncomment to view the tree
             expression.accept(executor);
         }

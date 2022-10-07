@@ -1,32 +1,26 @@
 package xyz.kumaraswamy.sketch.nativs;
 
+import xyz.kumaraswamy.sketch.nativs.convert.NString;
+import xyz.kumaraswamy.sketch.nativs.convert.Int;
 import xyz.kumaraswamy.sketch.processor.Evaluator;
 import xyz.kumaraswamy.sketch.processor.Expression;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.List;
 
 public abstract class Native {
-
-    public static final HashMap<String, Class<? extends Native>> calls;
-
-    static {
-        calls = new HashMap<>();
-        calls.put("print", Print.class);
-    }
-
     public static Native create(Evaluator eval, String funId) {
-        Class<? extends Native> clazz = calls.get(funId);
-        if (clazz == null) return null;
-        try {
-            return (Native) clazz.getConstructors()[0].newInstance(eval);
-        } catch (InstantiationException
-                 | IllegalAccessException
-                 | InvocationTargetException e) {
-            // should never each this point
-            throw new RuntimeException(e);
-        }
+        return switch (funId) {
+            case "print" -> new Print(eval);
+            case "printf" -> new Printf(eval);
+            case "len" -> new Len(eval);
+
+            // casting
+            case "string" -> new NString(eval);
+            case "int" -> new Int(eval);
+
+            case "array" -> new Array(eval);
+            default -> null;
+        };
     }
 
     public final Evaluator eval;

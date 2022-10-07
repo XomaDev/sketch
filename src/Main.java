@@ -1,5 +1,6 @@
-import xyz.kumaraswamy.sketch.Slime;
+import xyz.kumaraswamy.sketch.Sketch;
 import xyz.kumaraswamy.sketch.nativs.Print;
+import xyz.kumaraswamy.sketch.nativs.Printf;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -19,11 +20,13 @@ public class Main {
          */
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         Print.setOutputStream(stream);
-        Slime slime = new Slime();
+        Printf.setOutputStream(stream);
+
+        Sketch sketch = new Sketch();
         String lines = new String(Files.readAllBytes(Main.slime.toPath()));
 
         long start = System.nanoTime();
-        slime.execute(lines);
+        sketch.execute(lines);
         long end   = System.nanoTime();
 
         Duration d = Duration.ofNanos( end - start ) ;
@@ -32,5 +35,7 @@ public class Main {
         byte[] bytes = stream.toByteArray();
         // no need to close the stream
         Files.write(slimeOut.toPath(), bytes);
+
+        System.out.println();
     }
 }

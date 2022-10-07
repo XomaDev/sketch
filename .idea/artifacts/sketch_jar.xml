@@ -1,7 +1,7 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="slime:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/slime_jar</output-path>
-    <root id="archive" name="moonlight.jar">
+  <artifact type="jar" name="sketch:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/sketch_jar</output-path>
+    <root id="archive" name="sketch.jar">
       <element id="module-output" name="sketch" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/jetbrains/annotations/20.1.0/annotations-20.1.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.22/lombok-1.18.22.jar" path-in-jar="/" />

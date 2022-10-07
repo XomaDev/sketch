@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ArtifactsWorkspaceSettings">
     <artifacts-to-build>
-      <artifact name="slime:jar" />
+      <artifact name="sketch:jar" />
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
@@ -74,6 +74,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Class" />
+        <option value="AnnotationType" />
       </list>
     </option>
   </component>
@@ -99,13 +100,14 @@
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ToolWindowRun.ShowToolbar&quot;: &quot;false&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
     &quot;extract.method.default.visibility&quot;: &quot;private&quot;,
     &quot;jdk.selected.JAVA_MODULE&quot;: &quot;corretto-17&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Prashanth/Documents/slime/asset&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/kumaraswamy/Documents/cold-mind/sketch&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Artifacts&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;Settings.Markdown&quot;
@@ -117,27 +119,7 @@
       <recent name="C:\Users\Prashanth\Documents\slime" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Main">
-    <configuration name="FuncTest" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="FuncTest" />
-      <module name="sketch" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Lexer" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="xyz.moonlight.sketch.lex.Lexer" />
-      <module name="sketch" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="xyz.moonlight.sketch.lex.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="JAR Application.sketch.jar (1)">
     <configuration name="Main (1)" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Main" />
       <module name="bytecode" />
@@ -152,11 +134,33 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="xyz.kumaraswamy.sketch.Test" />
+      <module name="sketch" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="xyz.kumaraswamy.sketch.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="sketch.jar (1)" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/out/artifacts/sketch_jar/sketch.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="sketch.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/sketch.jar" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="JAR Application.sketch.jar (1)" />
+        <item itemvalue="JAR Application.sketch.jar" />
         <item itemvalue="Application.Main" />
-        <item itemvalue="Application.FuncTest" />
-        <item itemvalue="Application.Lexer" />
+        <item itemvalue="Application.Test" />
         <item itemvalue="Application.Main (1)" />
       </list>
     </recent_temporary>
@@ -202,6 +206,23 @@
       <workItem from="1664727412306" duration="8181000" />
       <workItem from="1664773989757" duration="7553000" />
       <workItem from="1664783684026" duration="164000" />
+      <workItem from="1664783853933" duration="715000" />
+      <workItem from="1664798282666" duration="656000" />
+      <workItem from="1664808872116" duration="674000" />
+      <workItem from="1664817307382" duration="647000" />
+      <workItem from="1664820042977" duration="2805000" />
+      <workItem from="1664858104723" duration="644000" />
+      <workItem from="1664877261678" duration="611000" />
+      <workItem from="1664882138654" duration="2091000" />
+      <workItem from="1664885661971" duration="4000" />
+      <workItem from="1664886412322" duration="4607000" />
+      <workItem from="1664892473144" duration="5683000" />
+      <workItem from="1664945821314" duration="2899000" />
+      <workItem from="1664956115190" duration="3655000" />
+      <workItem from="1664961984600" duration="1000" />
+      <workItem from="1664961991313" duration="6000" />
+      <workItem from="1664967413101" duration="11306000" />
+      <workItem from="1664986064541" duration="6329000" />
     </task>
     <task id="LOCAL-00001" summary="Implement Lex">
       <created>1662880630199</created>

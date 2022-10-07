@@ -2,6 +2,7 @@ package xyz.kumaraswamy.sketch.lex;
 
 public class Token {
 
+
     public final TokenType type;
     public final String lexeme;
     public final Object literal;

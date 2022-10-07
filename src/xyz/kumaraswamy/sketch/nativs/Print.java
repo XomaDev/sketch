@@ -9,7 +9,7 @@ import java.util.List;
 
 public class Print extends Native {
 
-    private static OutputStream stream;
+    static OutputStream stream;
 
     public static void setOutputStream(OutputStream stream) {
         Print.stream = stream;
@@ -26,14 +26,22 @@ public class Print extends Native {
     public Object accept(List<Expression> exprs) {
         for (Expression expr : exprs) {
             Object eval = expr == null ? null : this.eval.evaluate(expr);
-            try {
-                stream.write(String.valueOf(eval).getBytes());
-                stream.write('\n');
-            } catch (IOException e) {
-                e.printStackTrace();;
-                throw new RuntimeException("Cannot write to stream!");
+            if (eval instanceof Object[] array) {
+                for (Object element : array) print(element);
+            } else {
+                print(eval);
             }
         }
         return null;
+    }
+
+    private static void print(Object eval) {
+        try {
+            stream.write(java.lang.String.valueOf(eval).getBytes());
+            stream.write('\n');
+        } catch (IOException e) {
+            e.printStackTrace();;
+            throw new RuntimeException("Cannot write to stream!");
+        }
     }
 }

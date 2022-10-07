@@ -33,11 +33,24 @@ It'll print Apologize if `good boy` or it will go on forever because the day nev
 val text = "Hello, World!";
 ````
 
-Sketch supports four types of values - strings, numbers, booleans (`true`/`false`) and null.
+Sketch supports four types of values - strings, numbers, booleans (`true`/`false`), `null` and array.
 ````kotlin
 val happy = true;
 if (happy) {    happy = null;   };
 ````
+
+## Arrays
+````kotlin
+val array = array(7);
+array[0] = 7;
+
+for x (1 -> len(array) - 1) {
+    array[x] = array[x - 1] * 2;
+}
+printf(array);
+````
+prints `[7.0, 14.0, 28.0, 56.0, 112.0, 224.0, 448.0]
+`
 
 ## Conditions
 
@@ -105,3 +118,28 @@ while (x > 0) {
     print("value of x " + --x);
 };
 ````
+
+## Import
+
+````kotlin
+with Sketch.systemTime clock;
+
+fun fib(n) {
+  if (n < 2) {
+    return n;
+  }
+  return fib(n - 1) + fib(n - 2);
+}
+
+val before = clock();
+print(fib(40));
+print(clock() - before);
+````
+
+Internal functions can be implemented with the use of `with` statement.
+<br>
+`with <from> <function> <optional_function_rename>`
+
+## Running
+
+You can clone the repository, run the `Main` file or use the `jar` file from the releases.

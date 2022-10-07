@@ -1,13 +1,8 @@
-val date = 07;
-val goodboy = true;
-
-fun today() {
-  if (  goodboy ) {  print("apologize!");  }
-  else {    delay();    };
+fun hello(arg) {
+    if (arg != 7 && arg + 2 == 10) {
+        return "that was right";
+    };
+    return "Ah, No";
 };
 
-fun delay() {
-  date++;
-  today();
-};
-today();
+print( hello(8) );

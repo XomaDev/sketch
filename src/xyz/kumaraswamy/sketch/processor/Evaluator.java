@@ -1,21 +1,25 @@
 package xyz.kumaraswamy.sketch.processor;
 
-import xyz.kumaraswamy.sketch.Slime;
+import lombok.SneakyThrows;
+import xyz.kumaraswamy.sketch.Sketch;
 import xyz.kumaraswamy.sketch.lex.TokenType;
-import xyz.kumaraswamy.sketch.memory.GlobalMemory;
-import xyz.kumaraswamy.sketch.memory.LowerMemory;
+import xyz.kumaraswamy.sketch.memory.Memory;
 import xyz.kumaraswamy.sketch.nativs.Native;
 import xyz.kumaraswamy.sketch.lex.Token;
+import xyz.kumaraswamy.sketch.nativs.sketch.Import;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class Evaluator implements Expression.Visitor<Object> {
 
-    GlobalMemory fMemory;
-    GlobalMemory memory;
+    private final Import anImport = new Import(this);
 
-    public Evaluator(GlobalMemory memory) {
-        this.fMemory = memory;
+    public Memory headMemory;
+    public Memory memory;
+
+    public Evaluator(Memory memory) {
+        headMemory = memory;
         this.memory = memory;
     }
 
@@ -23,14 +27,17 @@ public class Evaluator implements Expression.Visitor<Object> {
         return expr.accept(this);
     }
 
-    private void lowerMemory(String name) {
-        memory = new LowerMemory(name, memory);
+    public void lowerMemory(String name) {
+        // use memory.next instead of creating
+        // new objects, this will make the language
+        // faster, memory.next is a cleared memory (its like new)
+        memory = memory.next != null ? memory.next
+                : new Memory(name, memory);
     }
 
-    private void upperMemory() {
-        if (memory instanceof LowerMemory lMemory) {
-            memory.delete();
-            memory = lMemory.getSMemory();
+    public void upperMemory() {
+        if (memory.lower()) {
+            memory = memory.upwards();
             return;
         }
         throw new RuntimeError("Already a super memory!");
@@ -42,6 +49,27 @@ public class Evaluator implements Expression.Visitor<Object> {
     }
 
     @Override
+    public Object visitArrayAccessExpr(Expression.ArrayAccess expr) {
+        Object valArray = expr.array;
+        Object val = evaluate(expr.array);
+
+        if (val instanceof Object[] array) {
+            return array[getArrayIndex(expr)];
+        } else if (val instanceof String string) {
+            return string.charAt(getArrayIndex(expr));
+        }
+        throw new RuntimeError("\"" + valArray + "\"" + " is not an valArray");
+    }
+
+    private int getArrayIndex(Expression.ArrayAccess expr) {
+        Object nNumber = evaluate(expr.access);
+        if (nNumber instanceof Double n) {
+            return n.intValue();
+        }
+        throw new RuntimeError("Needs a number for array access");
+    }
+
+    @Override
     public Object visitIdentifierExpr(Expression.Identifier expr) {
         return memory.getVal(expr.token.lexeme);
     }
@@ -49,61 +77,62 @@ public class Evaluator implements Expression.Visitor<Object> {
     @Override
     public Object visitPropertyAccessExpr(Expression.PropertyIdentifier expr) {
         if (expr.name.type == TokenType.THIS) {
-            return fMemory.getVal(expr.property.lexeme);
+            return headMemory.getVal(expr.property.lexeme);
         }
         return null;
     }
 
     @Override
-    public Object visitBinaryExpr(Expression.Binary expr) {
-        TokenType type = expr.operator.type;
+    public Object visitWithExpr(Expression.With expr) {
+        anImport.doImport(expr);
+        return null;
+    }
 
+    @Override
+    public Object visitBinaryExpr(Expression.Binary expr) {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
 
-        if (  type == TokenType.PLUS  ) {
-            if (  left == null && right == null  ) {
+        switch (expr.operator.type) {
+            case PLUS -> {
+                if (left instanceof Double
+                        && right instanceof Double) {
+                    return (double) left + (double) right;
+                }
+                if (left instanceof String
+                        || right instanceof String) {
+                    return String.valueOf(left) + right;
+                }
                 cannotApplyOperator(expr.operator);
-                return null; // not reached
             }
-            if (  left == null  ) {
-                left = "null";
-            } else if (  right == null  ) {
-                right = "null";
+            case MINUS -> {
+                if (left instanceof Double
+                        && right instanceof Double) {
+                    return (double) left - (double) right;
+                }
+                cannotApplyOperator(expr.operator);
             }
-            if (left instanceof Double
-                    && right instanceof Double) {
-                return (double) left + (double) right;
+            case STAR -> {
+                if (left instanceof Double
+                        && right instanceof Double) {
+                    return (double) left * (double) right;
+                }
+                cannotApplyOperator(expr.operator);
             }
-            if (left instanceof String
-                    || right instanceof String) {
-                return String.valueOf(left) + right;
+            case SLASH -> {
+                if (left instanceof Double
+                        && right instanceof Double) {
+                    return (double) left / (double) right;
+                }
+                cannotApplyOperator(expr.operator);
             }
-            cannotApplyOperator(expr.operator);
-        } else if (  type == TokenType.MINUS  ) {
-            if (left instanceof Double
-                    && right instanceof Double) {
-                return (double) left - (double) right;
+            case PERCENTAGE -> {
+                if (left instanceof Double
+                        && right instanceof Double) {
+                    return (double) left % (double) right;
+                }
+                cannotApplyOperator(expr.operator);
             }
-            cannotApplyOperator(expr.operator);
-        } else if (  type == TokenType.STAR  ) {
-            if (left instanceof Double
-                    && right instanceof Double) {
-                return (double) left * (double) right;
-            }
-            cannotApplyOperator(expr.operator);
-        } else if (  type == TokenType.SLASH  ) {
-            if (left instanceof Double
-                    && right instanceof Double) {
-                return (double) left / (double) right;
-            }
-            cannotApplyOperator(expr.operator);
-        } else if (  type == TokenType.PERCENTAGE  ) {
-            if (left instanceof Double
-                    && right instanceof Double) {
-                return (double) left % (double) right;
-            }
-            cannotApplyOperator(expr.operator);
         }
         return null;
     }
@@ -112,13 +141,14 @@ public class Evaluator implements Expression.Visitor<Object> {
     public Object visitBinaryUnaryExpr(Expression.BinaryUnary expr) {
         String valId = expr.valId.lexeme;
         Object val = memory.getVal(valId);
-        if (  val instanceof Double x  ) {
-            if (expr.operator.matches(  TokenType.INCREMENT,
-                    TokenType.DECREMENT  )) {
-                int n = expr.operator.type ==
-                        TokenType.INCREMENT ? 1 : -1;
-                memory.push(valId, x + n);
-                return expr.left ? x + n : x;
+        if (val instanceof Double x) {
+            switch (expr.operator.type) {
+                case INCREMENT, DECREMENT -> {
+                    int n = expr.operator.type ==
+                            TokenType.INCREMENT ? 1 : -1;
+                    memory.push(valId, x + n);
+                    return expr.left ? x + n : x;
+                }
             }
         }
         cannotApplyOperator(expr.operator);
@@ -130,15 +160,13 @@ public class Evaluator implements Expression.Visitor<Object> {
         TokenType type = expr.operator.type;
         Object value = evaluate(expr.expression);
 
-        if (  type == TokenType.MINUS  ) {
-            if (  value instanceof Double  ) {
+        if (type == TokenType.MINUS) {
+            if (value instanceof Double) {
                 return -((double) value);
             }
             cannotApplyOperator(expr.operator);
-        } else if (  type == TokenType.EXCLAMATION  ) {
-            if (  value instanceof Boolean bool  ) {
-                return !bool;
-            }
+        } else if (type == TokenType.EXCLAMATION) {
+            return !truthy(value);
         }
         return null;
     }
@@ -150,64 +178,65 @@ public class Evaluator implements Expression.Visitor<Object> {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
 
-        if (  type == TokenType.BANG_EQUAL  ) {
-            if (left == null && right == null) {
-                return true;
-            }
-            // if only one of them is null, return
-            // false
-            if (left == null || right == null) {
-                return false;
-            }
-            return left.equals(right);
-        } else if (  type == TokenType.NOT_EQUAL  ) {
-            if (left == null && right == null) {
-                return false;
-            }
-            if (left == null || right == null) {
-                return true;
-            }
-            return !left.equals(right);
-        } else if (  type == TokenType.LOGICAL_AND  ) {
-            if (left instanceof Boolean && right instanceof Boolean) {
-                return (boolean) left && (boolean) right;
-            }
-            cannotApplyOperator(expr.operator);
-        } else if (  type == TokenType.ABOVE  ) {
-            // > operator
-            if (left instanceof Double first
-                    && right instanceof Double second) {
-                return first > second;
-            }
-            cannotApplyOperator(expr.operator, "non numbers.");
-        } else if (  type == TokenType.BELOW  ) {
-            // < operator
-            if (left instanceof Double first
-                    && right instanceof Double second) {
-                return first < second;
-            }
-            cannotApplyOperator(expr.operator, "non numbers.");
-        } else if (  type == TokenType.ABOVE_EQUAL  ) {
-            // < operator
-            if (left instanceof Double first
-                    && right instanceof Double second) {
-                return first >= second;
-            }
-            cannotApplyOperator(expr.operator, "non numbers.");
-        } else if (  type == TokenType.BELOW_EQUAL  ) {
-            // < operator
-            if (left instanceof Double first
-                    && right instanceof Double second) {
-                return first <= second;
-            }
-            cannotApplyOperator(expr.operator, "non numbers.");
+        switch (type) {
+            case EQUAL_EQUAL:
+                return equal(left, right);
+            case NOT_EQUAL:
+                return !equal(left, right);
+            case LOGICAL_AND:
+                if (left instanceof Boolean && right instanceof Boolean) {
+                    return (boolean) left && (boolean) right;
+                }
+                cannotApplyOperator(expr.operator);
+                break;
+            case ABOVE:
+                // > operator
+                if (left instanceof Double first
+                        && right instanceof Double second) {
+                    return first > second;
+                }
+                cannotApplyOperator(expr.operator, "Operation of non numbers.");
+                break;
+            case BELOW:
+                // < operator
+                if (left instanceof Double first
+                        && right instanceof Double second) {
+                    return first < second;
+                }
+                cannotApplyOperator(expr.operator, "Operation of non numbers.");
+                break;
+            case ABOVE_EQUAL:
+                // < operator
+                if (left instanceof Double first
+                        && right instanceof Double second) {
+                    return first >= second;
+                }
+                cannotApplyOperator(expr.operator, "Operation of non numbers.");
+                break;
+            case BELOW_EQUAL:
+                // < operator
+                if (left instanceof Double first
+                        && right instanceof Double second) {
+                    return first <= second;
+                }
+                cannotApplyOperator(expr.operator, "Operation of non numbers.");
+                break;
         }
         return null;
     }
 
     @Override
-    public Object visitGroupingExpr(Expression.Grouping expr) {
-        return evaluate(expr.expression);
+    public Object visitArrayExpr(Expression.Array expr) {
+        List<Expression> list = expr.exprs;
+        int size = list.size();
+
+        Object[] vals = new Object[size];
+
+        for (int i = 0; i < size; i++) {
+            Expression expression = list.get(i);
+            vals[i] = evaluate(expression);
+        }
+        return vals;
     }
 
     @Override
@@ -221,11 +250,16 @@ public class Evaluator implements Expression.Visitor<Object> {
         Object val = evaluate(expr.expression);
 
         Expression.Val.ValId vId = expr.valId;
+        Object get = vId.get();
+
         if (vId.get() instanceof Token token) {
             assignVal(expr, val, token);
+        } else if (get instanceof Expression.ArrayAccess access) {
+            // array assignment, like names[0] = something
+            setArrayElement(val, access);
         } else {
             Expression.PropertyIdentifier property =
-                    (Expression.PropertyIdentifier) vId.get();
+                    (Expression.PropertyIdentifier) get;
             if (property.name.type == TokenType.THIS) {
                 // from Executor.class
                 Executor.onSuperMemory(this,
@@ -235,9 +269,24 @@ public class Evaluator implements Expression.Visitor<Object> {
         return val;
     }
 
+    private void setArrayElement(Object val, Expression.ArrayAccess access) {
+        Object aVal = evaluate(access.array);
+
+        if (aVal instanceof Object[] array) {
+            Object nPosition = evaluate(access.access);
+            if (nPosition instanceof Double nPos) {
+                int index = nPos.intValue();
+                array[index] = val;
+                return;
+            }
+            throw new RuntimeError("Needs a number for array access");
+        }
+        throw new RuntimeError("\"" + aVal + "\"" + " is not an array");
+    }
+
     private void assignVal(Expression.Val expr, Object val, Token valId) {
         String name = valId.lexeme;
-        if (  expr.assignment  ) {
+        if (expr.assignment) {
             memory.push(name, val);
         } else {
             memory.defineVal(name, val);
@@ -246,28 +295,20 @@ public class Evaluator implements Expression.Visitor<Object> {
 
     @Override
     public Object visitTernary(Expression.Ternary expr) {
-        Object cond = evaluate(expr.expr);
-        if (  cond instanceof Boolean  bool) {
-            return bool ? evaluate(expr.then) : evaluate(expr.or);
-        }
-        throw new RuntimeError("Condition should be logical expression." +
-                " [logical expr] then [expr] or [expr] required");
+        return truthy(
+                evaluate(expr.expr))
+                ? evaluate(expr.then) : evaluate(expr.or);
     }
 
     @Override
     public Object visitIfExpr(Expression.If expr) {
         Object cond = evaluate(expr.expr);
-        if (!(  cond instanceof Boolean  )) {
-            // todo
-            //  fix this!, use normal token
-            throw new RuntimeError("Condition should be logical expression");
-        }
         lowerMemory("if");
         Object result = null;
-        if ((boolean) cond) {
-            result =  evaluate(expr.body);
+        if (truthy(cond)) {
+            result = evaluate(expr.body);
         } else if (expr.orElse != null) {
-            result =  evaluate(expr.orElse);
+            result = evaluate(expr.orElse);
         }
         upperMemory();
         return result;
@@ -301,8 +342,6 @@ public class Evaluator implements Expression.Visitor<Object> {
             from = to;
             to = f;
         }
-        System.out.println(from);
-        System.out.println(to);
 
         // for ->
         memory.defineVal(valId, from);
@@ -312,13 +351,13 @@ public class Evaluator implements Expression.Visitor<Object> {
         Object result = null;
         double x;
         loop:
-        for(
+        for (
                 x = reverse ? from - 1 : from;
                 reverse ? x >= to : x <= to;
         ) {
             Interrupt interrupt = evaluate(loop);
             Object val = memory.getVal(valId);
-            if (  val instanceof Double parallel) {
+            if (val instanceof Double parallel) {
                 x = parallel;
                 memory.push(valId, parallel = (double) val + (reverse ? -1 : 1));
             } else {
@@ -345,7 +384,7 @@ public class Evaluator implements Expression.Visitor<Object> {
                         handled = false;
                 }
                 if (!handled) {
-                    result =  interrupt;
+                    result = interrupt;
                     break;
                 }
             }
@@ -364,10 +403,10 @@ public class Evaluator implements Expression.Visitor<Object> {
     public Object visitRangeExpr(Expression.Range expr) {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);
-        if (  left instanceof Double && right instanceof Double) {
-            return new Object[] {
-                        expr.type.type,
-                        left, right  };
+        if (left instanceof Double && right instanceof Double) {
+            return new Object[]{
+                    expr.type.type,
+                    left, right};
         }
         cannotApplyOperator(expr.type);
         return null;
@@ -375,15 +414,13 @@ public class Evaluator implements Expression.Visitor<Object> {
 
     @Override
     public Object visitWhileExpr(Expression.While expr) {
-        for(;;) {
-            Object cond = evaluate(expr.expr);
-            if (!(  cond instanceof Boolean bool  )) {
-                // todo handle it more correctly!
-                throw new RuntimeError("Needed an logical expression for while loop!");
-            }
-            if (bool) {
-                Object val = evaluate(expr.body);
+        for (; ; ) {
+            if (truthy(evaluate(expr.expr))) {
+                Interrupt val = evaluate(expr.body);
                 if (val != null) {
+                    if ("break".equals(val.type())) {
+                        break;
+                    }
                     return val;
                 }
             } else {
@@ -394,47 +431,123 @@ public class Evaluator implements Expression.Visitor<Object> {
     }
 
     @Override
+    public Object visitEachExpr(Expression.Each expr) {
+        String targetName = expr.targetName.lexeme;
+        String elementName = expr.elementName.lexeme;
+
+        lowerMemory("each");
+        Object val = memory.getVal(targetName);
+
+        Interrupt result = null;
+        // guys, any ideas, how to reuse code multiple
+        // times?
+        if (val instanceof List<?> exprs) {
+            loop:
+            for (Object elementVal : exprs) {
+                result = untilInterrupt(expr, elementName,
+                        evaluate((Expression) elementVal));
+                if (result != null) {
+                    switch (result.type()) {
+                        case "break":
+                            break loop;
+                        case "continue":
+                            break;
+                    }
+                }
+            }
+        } else if (val instanceof String vVal) {
+            loop:
+            for (char aChar : vVal.toCharArray()) {
+                result = untilInterrupt(expr,
+                        elementName, String.valueOf(aChar));
+                if (result != null) {
+                    switch (result.type()) {
+                        case "break":
+                            break loop;
+                        case "continue":
+                            break;
+                    }
+                }
+            }
+        } else {
+            throw new RuntimeException("Needs an array to iterate elements");
+        }
+        upperMemory();
+        return result;
+    }
+
+    // used for visitEachExpr() to iterate on multiple
+    // types of elements (Array, String)
+    private Interrupt untilInterrupt(Expression.Each expr,
+                                     String elementName, Object elementVal) {
+        Interrupt result;
+        memory.defineVal(elementName, elementVal);
+
+        // delete memory
+        result = evaluate(expr.body);
+        memory.delete();
+        if (result != null) {
+            switch (result.type()) {
+                case "break":
+                    break;
+                case "continue":
+                    // the, evaluate(List) function has
+                    // already stopped execution
+                    return null;
+            }
+        }
+        return result;
+    }
+
+    @SneakyThrows
+    @Override
     public Object visitFunCallExpr(Expression.FunCall expr) {
         String funId = expr.funId.lexeme;
         Native aNative = Native.create(this, funId);
 
         if (aNative != null) {
             // a native method call like print()
-            aNative.accept(expr.args);
+            return aNative.accept(expr.args);
         } else {
-            Expression.Fun fun = memory.getFun(funId);
+            Object function = memory.getFun(funId);
+            if (function instanceof Method method) {
+                List<Expression> args = expr.args;
 
+                int size = args.size();
+                Object[] _args = new Object[size];
+                for (int i = 0; i < size; i++) {
+                    _args[i] = evaluate(args.get(i));
+                }
+                // null because, they are static
+                // methods
+                return method.invoke(null, _args);
+            }
+            Expression.Fun fun = (Expression.Fun) function;
             List<Expression> callArgs = expr.args;
             List<Token> signature = fun.args;
 
             int expected = signature.size();
             int got = callArgs.size();
+
             if (expected != got) {
                 throw new RuntimeError("fun " + funId + "() " +
                         expected + " arguments, but got " + got);
             }
             lowerMemory("fun " + funId);
             for (int i = 0; i < signature.size(); i++) {
-                Token token = signature.get(i);
-                Expression arg = callArgs.get(i);
-
-                memory.defineVal(token.lexeme, evaluate(arg));
+                memory.define(
+                        signature.get(i).lexeme,
+                        evaluate(callArgs.get(i)));
             }
             Object invokeResult = null;
             Interrupt interrupt = evaluate(fun.expressions);
             if (interrupt != null) {
                 invokeResult = interrupt.value();
             }
-            // just do this so that the memory
-            // gets cleaned
-            for (Token token : signature)
-                memory.deleteVal(token.lexeme);
             upperMemory();
             return invokeResult;
         }
-        return null;
     }
-
 
     @Override
     public Object visitFunExpr(Expression.Fun expr) {
@@ -444,9 +557,8 @@ public class Evaluator implements Expression.Visitor<Object> {
 
     @Override
     public Object visitReturnExpr(Expression.Return expr) {
-        // yeah!, return self
-        return new Interrupt.Return(
-                evaluate(expr.expression));
+        return new Interrupt(
+                "return", evaluate(expr.expression));
     }
 
     private static void cannotApplyOperator(Token operator) {
@@ -454,77 +566,44 @@ public class Evaluator implements Expression.Visitor<Object> {
     }
 
     private static void cannotApplyOperator(Token operator, String type) {
-        Slime.error(operator,
+        Sketch.error(operator,
                 "Operator cannot be applied on " + type);
     }
 
     @Override
     public Object visitBreakExpr(Expression.Break expr) {
-        return new Interrupt.Break();
+        return new Interrupt("break", null);
     }
 
     @Override
     public Object visitContinueExpr(Expression.Continue expr) {
-        return new Interrupt.Continue();
+        return new Interrupt("continue", null);
     }
 
     @Override
     public Object visitForwardExpr(Expression.Forward expr) {
         Object times = evaluate(expr.expression);
-        if (  times instanceof Double  ) {
-            return new Interrupt.Forward((double) times);
+        if (times instanceof Double) {
+            return new Interrupt("forward", times);
         }
         throw new RuntimeError("Expected number for \"forward;\"");
     }
 
-    static abstract class Interrupt {
+    private static boolean equal(Object left, Object right) {
+        if (left == null && right == null)
+            return false;
+        if (left == null)
+            return false;
+        return left.equals(right);
+    }
 
-        abstract Object value();
-        abstract String type();
+    private static boolean truthy(Object object) {
+        if (object instanceof Boolean bool)
+            return bool;
+        throw new RuntimeError("Expected truthy, got \"" + object + "\"");
+    }
 
-        public static class Return extends Interrupt {
-            public Return(Object val) {
-                this.val = val;
-            }
+    record Interrupt(String type, Object value) {
 
-            Object val;
-
-            @Override
-            Object value() {  return val;  }
-
-            @Override
-            String type() {  return "return";  }
-        }
-
-        public static class Continue extends Interrupt {
-            @Override
-            Object value() {  return null;  }
-
-            @Override
-            String type() {  return "continue";  }
-        }
-
-        public static class Break extends Interrupt {
-            @Override
-            Object value() {  return null;  }
-
-            @Override
-            String type() {  return "break";  }
-        }
-
-        public static class Forward extends Interrupt {
-
-            public Forward(double val) {
-                this.val = val;
-            }
-
-            double val;
-
-            @Override
-            Object value() {  return val;  }
-
-            @Override
-            String type() {  return "forward";  }
-        }
     }
 }

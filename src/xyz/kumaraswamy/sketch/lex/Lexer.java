@@ -1,6 +1,6 @@
 package xyz.kumaraswamy.sketch.lex;
 
-import xyz.kumaraswamy.sketch.Slime;
+import xyz.kumaraswamy.sketch.Sketch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,7 +17,10 @@ public class Lexer {
         keywords.put("false",     TokenType.FALSE);
         keywords.put("null",      TokenType.NULL);
 
+        keywords.put("with",      TokenType.WITH);
+
         keywords.put("this",      TokenType.THIS);
+        keywords.put("each",      TokenType.EACH);
 
         keywords.put("val",       TokenType.VAL);
         keywords.put("fun",       TokenType.FUN);
@@ -32,9 +35,6 @@ public class Lexer {
         keywords.put("break",     TokenType.BREAK);
         keywords.put("continue",  TokenType.CONTINUE);
         keywords.put("forward",   TokenType.FORWARD);
-
-        // value types
-        keywords.put("lev",       TokenType.LEV);
     }
 
     private final String source;
@@ -75,21 +75,24 @@ public class Lexer {
             case ';': addToken(TokenType.SEMICOLON); break;
             case '(': addToken(TokenType.LEFT_PAREN); break;
             case ')': addToken(TokenType.RIGHT_PAREN); break;
+            case '[': addToken(TokenType.LEFT_SQUARE); break;
+            case ']': addToken(TokenType.RIGHT_SQUARE); break;
             case '{': addToken(TokenType.LEFT_BRACE); break;
             case '}': addToken(TokenType.RIGHT_BRACE); break;
             case '>': addToken(match('=') ? TokenType.ABOVE_EQUAL : TokenType.ABOVE); break;
-            case '<': {
+            case '<':
                 belowChar();
-            } break;
+                break;
             case '&': addToken(match('&') ? TokenType.LOGICAL_AND : TokenType.BITWISE_AND); break;
             case '|': addToken(match('|') ? TokenType.LOGICAL_OR : TokenType.BITWISE_OR); break;
             case ' ':
+            case ' ':
             case '\r':
             case '\t':
                 // Ignore whitespace.
                 break;
             case '=':
-                addToken(match('=') ? TokenType.BANG_EQUAL : TokenType.EQUAL);
+                addToken(match('=') ? TokenType.EQUAL_EQUAL : TokenType.EQUAL);
                 break;
             case '"': string(); break;
             case '\n':
@@ -101,7 +104,7 @@ public class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
-                    Slime.error(line, "Unexpected character \"" + c + "\"");
+                    Sketch.error(line, "Unexpected character \"" + c + "\"");
                 }
         }
     }
@@ -200,7 +203,7 @@ public class Lexer {
         }
 
         if (isAtEnd()) {
-            Slime.error(line, "Unterminated string.");
+            Sketch.error(line, "Unterminated string.");
             return;
         }
 
