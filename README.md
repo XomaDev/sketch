@@ -2,7 +2,7 @@
 
 ![sketch](/asset/sketch.png)
 
-Sketch is a language indented for fun.
+Sketch is a language intended for fun.
 <br>
 It has a Kotlin-style syntax.
 <br>
